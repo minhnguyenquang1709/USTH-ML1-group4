@@ -80,15 +80,10 @@ print("matches:\n",matches)
 matches.to_csv('./merged.csv')
 
 # Splitting Data
-X = matches[["Home Team Name", "Away Team Name", "total_points_home", "total_points_away"]].values
-X_logi = matches[["Home Team Name", "Away Team Name", "total_points_home", "total_points_away", "Championship Home", "Championship Away"]].values
+X = matches[["Home Team Name", "Away Team Name", "total_points_home", "total_points_away", "Championship Home", "Championship Away"]].values
 y = matches["Who Wins"].values
-y_logi = y
-# Random Forest Classifier only takes 4 parameters, so 2 data sets are made
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
-Xlogi_train, Xlogi_test, ylogi_train, ylogi_test = train_test_split(X_logi, y_logi, test_size=0.4, random_state=42)
-# print("Training dataset: ", X_train, y_train)
-# print("Testing dataset: ", X_test, y_test)
+print("Train data: ", X_train)
 
 # Model Training
 rf = RandomForestClassifier(random_state=42)
@@ -125,14 +120,14 @@ param_grid_lr = {
 
 # Perform grid search for logistic regression
 grid_search_lr = GridSearchCV(LogisticRegression(max_iter=10000, solver='saga'), param_grid_lr, cv=5, scoring='accuracy')
-grid_search_lr.fit(Xlogi_train, ylogi_train)
+grid_search_lr.fit(X_train, y_train)
 
 # Get the best logistic regression model
 best_lr = grid_search_lr.best_estimator_
 
 # Evaluate the best logistic regression model
-y_pred_lr = best_lr.predict(Xlogi_test)
-accuracy_lr = accuracy_score(ylogi_test, y_pred_lr)
+y_pred_lr = best_lr.predict(X_test)
+accuracy_lr = accuracy_score(y_test, y_pred_lr)
 print(f"Accuracy of the best Logistic Regression: {accuracy_lr * 100:.3f}%")
 print("Best Parameters for Logistic Regression:", grid_search_lr.best_params_)
 
@@ -147,9 +142,9 @@ accuracy = accuracy_score(y_test, y_pred)
 results['RandomForestClassifier'] = accuracy
 
 # Logistic Regression
-best_lr.fit(Xlogi_train, ylogi_train)
-ylogi_pred = best_lr.predict(Xlogi_test)
-accuracy = accuracy_score(ylogi_test, ylogi_pred)
+best_lr.fit(X_train, y_train)
+y_pred = best_lr.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
 results['LogisticRegression'] = accuracy
 
 # Update best lr model
@@ -166,7 +161,7 @@ cm_rf = confusion_matrix(y_test, y_pred_rf)
 print("Confusion Matrix RF:\n", cm_rf)
 print("Classification Report:\n", classification_report(y_test, y_pred_rf, zero_division=1))
 # Logistic Regression
-cm_lr = confusion_matrix(ylogi_test, y_pred_lr)
+cm_lr = confusion_matrix(y_test, y_pred_lr)
 print("Confusion Matrix LR:\n", cm_lr)
 print("Classification Report for Logistic Regression:\n", classification_report(y_test, y_pred_lr, zero_division=1))
 
@@ -189,7 +184,7 @@ print("Training Data:")
 print(matches.head())
 
 # Detailed Single Match Prediction
-def detailed_single_match_prediction(model, team1, team2, is_logistic_regression=False):
+def detailed_single_match_prediction(model, team1, team2):
     x = []
     
     try:
@@ -197,11 +192,8 @@ def detailed_single_match_prediction(model, team1, team2, is_logistic_regression
         x.append(teams_index[team2])
         x.append(Ranking.loc[Ranking["country_full"] == team1, "total_points"].values[0])
         x.append(Ranking.loc[Ranking["country_full"] == team2, "total_points"].values[0])
-        
-        if is_logistic_regression:
-            x.append(champion_count.get(team1, 0))
-            x.append(champion_count.get(team2, 0))
-        
+        x.append(champion_count.get(team1, 0))
+        x.append(champion_count.get(team2, 0))
         x = np.array(x).reshape(1, -1)
         
         # print("x: ", x)
@@ -211,9 +203,8 @@ def detailed_single_match_prediction(model, team1, team2, is_logistic_regression
         print(f"Home - Away: {team1} - {team2}")
         print(f"Total Points Home: {x[0][2]}")
         print(f"Total Points Away: {x[0][3]}")
-        if is_logistic_regression:
-            print(f"Championship Home: {x[0][4]}")
-            print(f"Championship Away: {x[0][5]}")
+        print(f"Championship Home: {x[0][4]}")
+        print(f"Championship Away: {x[0][5]}")
         print('-----------------------------------------------------------------------------')
 
         prediction = model.predict(x)[0]
@@ -237,7 +228,7 @@ team2 = "Portugal"
 result, probabilities = detailed_single_match_prediction(best_rf, team1, team2)
 
 # Example single match prediction with logistic regression
-result_lr, probabilities_lr = detailed_single_match_prediction(best_lr, team1, team2, is_logistic_regression=True)
+result_lr, probabilities_lr = detailed_single_match_prediction(best_lr, team1, team2)
 
 
 def getting_input(model, team1, team2, is_logistic_regression=False):
@@ -250,11 +241,9 @@ def getting_input(model, team1, team2, is_logistic_regression=False):
         x.append(teams_index[team1])
         x.append(teams_index[team2])
         x.append(Ranking.loc[Ranking["country_full"] == team1, "total_points"].values[0])
-        x.append(Ranking.loc[Ranking["country_full"] == team2, "total_points"].values[0])
-        
-        if is_logistic_regression:
-            x.append(champion_count.get(team1, 0))
-            x.append(champion_count.get(team2, 0))
+        x.append(Ranking.loc[Ranking["country_full"] == team2, "total_points"].values[0])        
+        x.append(champion_count.get(team1, 0))
+        x.append(champion_count.get(team2, 0))
         
         x = np.array(x).reshape(1, -1)
     except Exception as e:
@@ -275,7 +264,7 @@ def determine_winner(result, prob, match):
 
 def mua_giai(arr, model, is_logistic_regression=False):
     if len(arr) == 1:
-        result, prob = getting_input(model, arr[0][0], arr[0][1], is_logistic_regression)
+        result, prob = getting_input(model, arr[0][0], arr[0][1])
         return determine_winner(result, prob, arr[0])
     
     if len(arr) % 2 == 1:
@@ -286,15 +275,15 @@ def mua_giai(arr, model, is_logistic_regression=False):
         match1 = arr[i]
         match2 = arr[i + 1]
 
-        result1, prob1 = detailed_single_match_prediction(model, match1[0], match1[1], is_logistic_regression)
-        result2, prob2 = detailed_single_match_prediction(model, match2[0], match2[1], is_logistic_regression)
+        result1, prob1 = detailed_single_match_prediction(model, match1[0], match1[1])
+        result2, prob2 = detailed_single_match_prediction(model, match2[0], match2[1])
 
         winner1 = determine_winner(result1, prob1, match1)
         winner2 = determine_winner(result2, prob2, match2)
 
         next_round.append([winner1, winner2])
 
-    return mua_giai(next_round, model, is_logistic_regression)
+    return mua_giai(next_round, model)
 
 matches = [
     ["Croatia", "Brazil"],
@@ -306,5 +295,5 @@ matches = [
 result = mua_giai(matches, models["RandomForest"])
 print(result)
 
-result = mua_giai(matches, models["LogisticRegression"], is_logistic_regression=True)
+result = mua_giai(matches, models["LogisticRegression"])
 print(result)
