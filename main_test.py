@@ -211,7 +211,7 @@ def detailed_single_match_prediction(model, team1, team2):
         prediction_proba = model.predict_proba(x)[0]
         
         print("Prediction and Probabilities:")
-        print(f"Predicted Winner: {'Home Team' if prediction == 1 else 'Away Team' if prediction == 2 else 'Draw'}")
+        print(f"Predicted Winner: {f'{team1}' if prediction == 1 else f'{team2}' if prediction == 2 else 'Draw'}")
         print(f"Draw Probability: {prediction_proba[0]* 100:.3f}%")
         print(f"Home Team Win Probability: {prediction_proba[1]* 100:.3f}%")
         print(f"Away Team Win Probability: {prediction_proba[2]* 100:.3f}%")
@@ -231,7 +231,7 @@ result, probabilities = detailed_single_match_prediction(best_rf, team1, team2)
 result_lr, probabilities_lr = detailed_single_match_prediction(best_lr, team1, team2)
 
 
-def getting_input(model, team1, team2, is_logistic_regression=False):
+def getting_input(model, team1, team2):
     if team1 == team2:
         print("Invalid names")
         raise ValueError("Same Names")
@@ -262,7 +262,7 @@ def determine_winner(result, prob, match):
     else:
         return match[1]
 
-def mua_giai(arr, model, is_logistic_regression=False):
+def predict_season(arr, model):
     if len(arr) == 1:
         result, prob = getting_input(model, arr[0][0], arr[0][1])
         return determine_winner(result, prob, arr[0])
@@ -283,7 +283,7 @@ def mua_giai(arr, model, is_logistic_regression=False):
 
         next_round.append([winner1, winner2])
 
-    return mua_giai(next_round, model)
+    return predict_season(next_round, model)
 
 matches = [
     ["Croatia", "Brazil"],
@@ -292,8 +292,8 @@ matches = [
     ["England", "France"]
 ]
 
-result = mua_giai(matches, models["RandomForest"])
+result = predict_season(matches, models["RandomForest"])
 print(result)
 
-result = mua_giai(matches, models["LogisticRegression"])
+result = predict_season(matches, models["LogisticRegression"])
 print(result)
