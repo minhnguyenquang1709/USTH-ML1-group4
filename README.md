@@ -31,8 +31,8 @@ In this project, we developed a robust pipeline for predicting football match re
 
 ### Key Findings
 
-- **Random Forest Model**: Achieved an accuracy of 94.658%, demonstrating its effectiveness in predicting match outcomes.
-- **Logistic Regression Model**: Achieved an accuracy of 53.954%, highlighting the need for more complex models in capturing the intricacies of match data.
+- **Random Forest Model**: Achieved an accuracy of 95.114%, demonstrating its effectiveness in predicting match outcomes.
+- **Logistic Regression Model**: Achieved an accuracy of 55.652%, highlighting the need for more complex models in capturing the intricacies of match data.
 
 ### Future Work
 
